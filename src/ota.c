@@ -1,0 +1,11 @@
+#include "er/ota.h"
+#include <string.h>
+static int valid_slot(int s){return s>=0&&s<ER_OTA_SLOTS;}
+void er_ota_init(er_ota_t *o,uint32_t v,er_ota_verify_fn f,void*u){if(!o)return;memset(o,0,sizeof(*o));o->active_slot=-1;o->pending_slot=-1;o->running_version=v;o->verify=f;o->verify_user=u;}
+er_ota_status_t er_ota_begin(er_ota_t*o,int s,const er_ota_manifest_t*m){if(!o||!m||!valid_slot(s)||!o->verify||m->image_size==0||m->version<=o->running_version)return ER_OTA_EINVAL;if(s==o->active_slot||o->slots[s].state==ER_OTA_BOOTING)return ER_OTA_ESTATE;o->slots[s].manifest=*m;o->slots[s].received=0;o->slots[s].state=ER_OTA_EMPTY;o->download_active=true;return ER_OTA_OK;}
+er_ota_status_t er_ota_write(er_ota_t*o,int s,uint32_t off,uint32_t n){if(!o||!valid_slot(s)||!o->download_active||o->slots[s].state!=ER_OTA_EMPTY)return ER_OTA_ESTATE;if(off!=o->slots[s].received||n>o->slots[s].manifest.image_size-off)return ER_OTA_ERANGE;o->slots[s].received+=n;return ER_OTA_OK;}
+er_ota_status_t er_ota_finalize(er_ota_t*o,int s){if(!o||!valid_slot(s)||!o->download_active||o->slots[s].state!=ER_OTA_EMPTY)return ER_OTA_ESTATE;if(o->slots[s].received!=o->slots[s].manifest.image_size){o->slots[s].state=ER_OTA_INVALID;o->download_active=false;return ER_OTA_ERANGE;}if(!o->verify(&o->slots[s].manifest,o->verify_user)){o->slots[s].state=ER_OTA_INVALID;o->download_active=false;return ER_OTA_EVERIFY;}o->slots[s].state=ER_OTA_READY;o->download_active=false;return ER_OTA_OK;}
+er_ota_status_t er_ota_select_boot(er_ota_t*o,int s){if(!o||!valid_slot(s)||o->slots[s].state!=ER_OTA_READY)return ER_OTA_ESTATE;o->pending_slot=s;o->slots[s].state=ER_OTA_BOOTING;return ER_OTA_OK;}
+er_ota_status_t er_ota_confirm_running(er_ota_t*o,uint32_t v){if(!o||o->pending_slot<0||o->slots[o->pending_slot].state!=ER_OTA_BOOTING||o->slots[o->pending_slot].manifest.version!=v)return ER_OTA_EVERIFY;o->active_slot=o->pending_slot;o->pending_slot=-1;o->running_version=v;o->slots[o->active_slot].state=ER_OTA_CONFIRMED;return ER_OTA_OK;}
+void er_ota_mark_boot_failed(er_ota_t*o){if(!o||o->pending_slot<0)return;o->slots[o->pending_slot].state=ER_OTA_INVALID;o->pending_slot=-1;}
+const er_ota_slot_t*er_ota_slot(const er_ota_t*o,int s){return(o&&valid_slot(s))?&o->slots[s]:0;}
