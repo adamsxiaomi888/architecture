@@ -1,0 +1,5 @@
+/build/
+/Testing/
+*.o
+*.a
+
