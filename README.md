@@ -6,6 +6,7 @@
 
 - [最小 OSAL：Linux 与 RTOS 如何复用周期逻辑](docs/osal.md)
 - [Renode MCU 固件仿真入口](renode/README.md)
+- [第一目标平台冻结：STM32G474RE + FreeRTOS/Zephyr](docs/platform-decision.md)
 
 - [技术交流简图：六个框讲清平台](docs/architecture-simple.md)
 - [代码导读：从让舵机转一下开始](docs/guide.md)
