@@ -1,4 +1,6 @@
 #include "sim.h"
+#include "actuator.h"
+#include "er/devices.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -16,12 +18,18 @@ int main(int argc, char **argv)
     }
     er_sim_t sim;
     er_runtime_t rt;
+    er_sim_actuator_t drivers[ER_JOINTS];
+    er_hal_actuator_t axes[ER_JOINTS];
+    er_devices_t devices;
     er_limits_t lim = {{-3,-3},{3,3},{2,2}};
     er_command_t cmd = {0,1,{1.0f,-0.5f},{1,1}};
     er_sensor_t sensor;
     er_output_t out;
     er_sim_init(&sim);
     er_runtime_init(&rt, &lim);
+    for (unsigned i=0;i<ER_JOINTS;i++)
+        if (er_sim_actuator_init(&drivers[i], &sim, i, true, &axes[i]) != ER_HAL_OK) return 1;
+    if (er_devices_bind(&devices, axes) != ER_HAL_OK) return 1;
     er_sim_set_stalled(&sim, 0, stall);
     if (er_runtime_submit_command(&rt, &cmd) != ER_OK || er_runtime_arm(&rt) != ER_OK) return 1;
     printf("{\"schema\":1,\"scenario\":\"%s\",\"dt_us\":10000,\"steps\":300}\n", name);
@@ -35,7 +43,7 @@ int main(int argc, char **argv)
         }
         if (sensor_fault && n == 20) er_sim_set_sensor_valid(&sim, false);
         if (sensor_fault && n == 21) er_sim_set_sensor_valid(&sim, true);
-        er_sim_sensor(&sim, &sensor);
+        (void)er_devices_read(&devices, sim.now_us, &sensor);
         er_status_t status = er_runtime_step(&rt, sim.now_us, &sensor, &out);
         if (status != ER_OK && status != ER_EFAULT) return 1;
         printf("{\"tick\":%u,\"time_us\":%llu,\"submitted\":%s,\"sequence\":%u,\"target\":[1,-0.5],\"sensor_valid\":%s,\"stalled\":%s,\"position\":[%.9g,%.9g],\"output_velocity\":[%.9g,%.9g],\"enabled\":%s,\"faults\":%u}\n",
@@ -47,7 +55,9 @@ int main(int argc, char **argv)
             uint32_t expected = stale ? ER_FAULT_CMD_STALE : ER_FAULT_SENSOR_INVALID;
             if (out.enabled || out.faults != expected || out.velocity[0] != 0 || out.velocity[1] != 0) return 1;
         } else if (!out.enabled || out.faults) return 1;
-        er_sim_advance(&sim, &out, 10000);
+        er_hal_status_t applied = er_devices_apply(&devices, &out);
+        if (out.enabled && applied != ER_HAL_OK) return 1;
+        if (er_sim_actuators_advance(drivers, ER_JOINTS, 10000) != ER_HAL_OK) return 1;
     }
     if (!stale && !sensor_fault) {
         if (fabsf(sim.position[1] + 0.5f) > 0.001f) return 1;

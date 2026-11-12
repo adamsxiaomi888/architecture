@@ -26,8 +26,8 @@
 | 浏览器 | 同一份 C 核心和仿真模型经 WASM 运行；失败时明确标识 JavaScript 演示后备模式 |
 | 3D 展示 | Canvas 投影的程序化 HD1910M 示意外形，读取仿真反馈；不是物理仿真或制造级 CAD |
 | STEP / STL | 官方型号 STEP 与转换 STL 已归档，作为机械参考；当前主视图并非直接使用该网格 |
-| 测试 | 配置含 8 项测试（有 Node 时）；没有 Node 时仅注册 7 项原生测试 |
-| HAL / RTOS | HAL 接口草案已定义；`ports/` 目前是接入说明，没有可运行 RTOS/BSP 端口 |
+| 测试 | 配置含 10 项测试（有 Node 时）；没有 Node 时注册 9 项原生测试 |
+| HAL / RTOS | 执行器 HAL 绑定与两类仿真驱动已接入原生/WASM；其他 HAL 为草案，`ports/` 尚无可运行 RTOS/BSP 端口 |
 | OTA | 独立内存状态机原型；没有 Flash 写入、真实签名验证、掉电持久化或启动回滚 |
 | 参数、日志、产测 | 需求与方案阶段，尚未形成设备服务实现 |
 
@@ -62,8 +62,14 @@ python3 tools/replay.py ./build/er_sim_runner /tmp/servo-sensor.jsonl
 - `sim/`：虚拟时间、双轴执行器与场景运行器。
 - `web/wasm/bridge.c`：浏览器与 C 核心/仿真之间的桥接。
 - `web/app.js`、`web/servo3d.js`：交互、曲线和外观展示。
-- `include/er/hal.h`：设备、时钟、存储与看门狗接口草案。
+- `include/er/hal.h`：设备、时钟、存储与看门狗接口。
+- `src/devices.c`：闭环执行器绑定、能力检查、反馈汇总和输出分发。
+- `sim/actuator.c`：有反馈与无反馈的静态仿真驱动实例。
 - `src/ota.c`：未接入控制闭环的 OTA 原型。
 - `tests/`：原生核心与网页 WASM 回归测试。
 
 更新日期：2026-11-12。功能变更应同步更新实现状态、导读与测试条件；设计目标不能标为已实现。
+
+## 带 RTOS 的业务如何在 Linux 测试
+
+通过统一接口编写的业务可连接 Linux 或 RTOS 适配实现；直接调用 FreeRTOS API、ISR 或芯片寄存器的代码不能原样运行在普通 Linux。当前实际运行的是无 OS 依赖的 C 核心与仿真驱动，完整 OSAL/RTOS 端口尚未实现。RTOS 模拟端口也不能证明板端实时性。
