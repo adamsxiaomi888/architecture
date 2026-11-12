@@ -50,7 +50,7 @@
     poly(back, 'rgba(45,55,70,.95)'); poly(front, 'rgba(190,205,220,.95)');
   }
   function arm(x, angle, color, ghost) {
-    const len = 2.25, w = .22, c = Math.cos(angle), s = Math.sin(angle);
+    const len = 1.05, w = .28, c = Math.cos(angle), s = Math.sin(angle);
     const base = .88;
     const pts = [[x-w/2,base,0],[x+w/2,base,0],[x+w/2+len*c,base+w*s,0],[x-w/2+len*c,base+w*s,0]];
     poly(pts, ghost ? 'rgba(110,170,255,.16)' : color, ghost ? 'rgba(80,140,230,.8)' : 'rgba(20,35,55,.7)');
@@ -106,8 +106,11 @@
       }
       /* output bearing, shaft and the round 25T horn */
       cylinder(x, .58, 0, .34, .28, '#d6e2ed');
-      cylinder(x, .80, 0, .48, .10, ['#e9eef3','#aebdca','#8094a4']);
-      arm(x, target, '#7eafff', true); arm(x, actual, model.faults ? '#f05b65' : '#f2a04a', false);
+      cylinder(x, .80, 0, .31, .10, ['#c7d2dc','#899aa8','#657785']);
+      cylinder(x, .87, 0, .13, .12, ['#e7edf2','#aebdca','#8094a4']);
+      /* 25T horn: compact metal disc with six visible fastener recesses. */
+      for (let h=0; h<6; h++) { const a=h*Math.PI/3; cylinder(x+.22*Math.cos(a), .87+.22*Math.sin(a), .08, .035, .025, '#52616d'); }
+      arm(x, target, '#7eafff', true); arm(x, actual, model.faults ? '#f05b65' : '#d2a15c', false);
       const p = project([x, -1.35, 0]); ctx.fillStyle='#dbe8f5'; ctx.font='600 13px system-ui'; ctx.textAlign='center'; ctx.fillText(`舵机 ${i+1}`, p.x, p.y+24);
       ctx.font='12px ui-monospace'; ctx.fillStyle='#93abc5'; ctx.fillText(`实际 ${(actual / RAD).toFixed(1)}°  · 目标 ${(target / RAD).toFixed(1)}°`, p.x, p.y+42);
     });
