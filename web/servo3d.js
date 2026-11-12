@@ -60,12 +60,17 @@
     poly(low,face); poly(high,face);
   }
   function arm(x, angle, color, ghost) {
-    const len = .82, w = .34, c = Math.cos(angle), s = Math.sin(angle);
+    const len = .82, w = .30, depth = .14, c = Math.cos(angle), s = Math.sin(angle);
     const base = .88;
-    const pts = [[x-w/2,base,0],[x+w/2,base,0],[x+w/2+len*c,base+w*s,0],[x-w/2+len*c,base+w*s,0]];
-    poly(pts, ghost ? 'rgba(110,170,255,.16)' : color, ghost ? 'rgba(80,140,230,.8)' : 'rgba(20,35,55,.7)');
+    const nx=-s*w/2, ny=c*w/2, z=ghost?.08:-.08;
+    const p0=[x+nx,base+ny,z], p1=[x-nx,base-ny,z], p2=[p1[0]+len*c,p1[1]+len*s,z], p3=[p0[0]+len*c,p0[1]+len*s,z];
+    const q=depth/2, top=[p0,p1,p2,p3].map(v=>[v[0],v[1],v[2]+q]), bot=[p0,p1,p2,p3].map(v=>[v[0],v[1],v[2]-q]);
+    const fill=ghost ? 'rgba(80,160,255,.36)' : color;
+    poly(top,fill,ghost?'rgba(110,190,255,.95)':'rgba(245,250,255,.8)');
+    poly(bot,fill,'rgba(8,12,18,.65)');
+    for(let i=0;i<4;i++) poly([bot[i],bot[(i+1)%4],top[(i+1)%4],top[i]],fill,'rgba(10,18,28,.6)');
     const end = [x+len*c, base+len*s, 0];
-    poly([[end[0]-.18,end[1]-.1,-.12],[end[0]+.18,end[1]-.1,-.12],[end[0]+.18,end[1]+.1,-.12],[end[0]-.18,end[1]+.1,-.12]], ghost ? 'rgba(110,170,255,.12)' : color);
+    cylinderY(end[0],end[1],z,.13,.18,ghost?'rgba(70,145,230,.42)':color);
   }
   function drawCad(cx, color) {
     /* CAD STL is retained as an engineering reference; vendor STEP often
