@@ -32,3 +32,15 @@ cmake --build build
 RTOS 端口需要实现相同两个操作：扩展为 64 位的单调时钟，以及等待该时间域截止点。必须处理 tick 回绕、精度不足、唤醒取整和中断上下文限制；不能简单把微秒除以 tick 后向下取整。端口必须通过相同的契约测试并在目标板测量调度时序。
 
 业务代码通过 OSAL 使用服务才能复用；直接调用 xTaskCreate 或芯片中断代码不会因此自动在 Linux 上运行。RTOS 官方模拟端口是另一种测试路径，不等于硬件时序验证。
+
+## 当前共用任务验证
+
+`examples/control_task.c` 是不包含 POSIX 或 RTOS 头文件的周期控制任务；`control_posix.c` 只负责注入 Linux 时钟端口。它通过 `er_devices` 和仿真 HAL 读取反馈、调用 `er_runtime_step`、提交输出。`normal`、`stale`、`sensor` 三个入口使用同一份任务代码：
+
+```sh
+./build/control_posix normal
+./build/control_posix stale
+./build/control_posix sensor
+```
+
+这证明业务任务与 Linux 启动入口已分开；它还没有证明 FreeRTOS 端口，因为仓库尚未包含 FreeRTOS kernel 配置、任务入口和可运行移植层。下一步实现 `er_osal_clock_t` 的 FreeRTOS 端口并复用同一 `er_control_task_run`，再在目标板测量调度和控制时序。
