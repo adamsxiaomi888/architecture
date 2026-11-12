@@ -43,4 +43,4 @@ RTOS 端口需要实现相同两个操作：扩展为 64 位的单调时钟，�
 ./build/control_posix sensor
 ```
 
-这证明业务任务与 Linux 启动入口已分开；它还没有证明 FreeRTOS 端口，因为仓库尚未包含 FreeRTOS kernel 配置、任务入口和可运行移植层。下一步实现 `er_osal_clock_t` 的 FreeRTOS 端口并复用同一 `er_control_task_run`，再在目标板测量调度和控制时序。
+这证明业务任务与 Linux 启动入口已分开；FreeRTOS 端口源码现在位于 `ports/freertos/`，通过 `ER_BUILD_FREERTOS_PORT=ON` 可选编译；它需要产品提供 `FreeRTOSConfig.h`、kernel 和 MCU port。当前尚未在目标板编译或运行，因此仍不能声称 RTOS 已验证。下一步是为选定 MCU 固定配置、任务入口、tick 回绕策略，并复用同一 `er_control_task_run`。
