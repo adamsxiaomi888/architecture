@@ -65,3 +65,7 @@ ctest --test-dir /tmp/er-build --output-on-failure
 - 在 `tests/` 增加能失败的自动化用例，并记录仿真验证还是硬件验证。
 
 最后更新时间：2026-11-12。本文随代码提交一起维护。
+
+## 2026-11-12：闭环仿真已经接入
+
+`demo.c` 仍是单次计算示例；新增的 `sim/runner.c` 则运行 300 个虚拟周期并输出 JSONL。网页通过 `web/wasm/bridge.c` 调用同一份 C 核心，展示舵机追踪目标的过程。命令超时和传感器失效可以复现，卡死模型尚无堵转保护。详情见 [场景测试](scenarios.md) 和 [浏览器接口](../web/protocol.md)。
