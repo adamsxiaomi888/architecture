@@ -46,6 +46,7 @@
     for(let axis=0;axis<2;axis++)for(const field of ['target','position']){ctx.strokeStyle=field==='target'?'#777':axis?'#f0a07d':'#e4572e';ctx.setLineDash(field==='target'?[4,4]:[]);ctx.beginPath();state.history.forEach((p,i)=>{const x=42+i/119*(w-54);i?ctx.lineTo(x,y(p[field][axis])):ctx.moveTo(x,y(p[field][axis]));});ctx.stroke();}ctx.setLineDash([]);
   }
   function publish() {
+    if(window.erServoView) window.erServoView.update({position:state.position,target:state.target,faults:state.faults});
     for(let i=0;i<2;i++){$('target'+i).value=state.target[i];$('target'+i+'Out').textContent=state.target[i].toFixed(2);}
     $('backend').textContent=wasm?'C11 核心 · WebAssembly':'JavaScript 演示模型（未接入 C 核心）';$('pos0').textContent=state.position[0].toFixed(3)+' rad';$('pos1').textContent=state.position[1].toFixed(3)+' rad';$('enabled').textContent=observation().enabled?'启用':'禁用';$('faultCode').textContent='0x'+state.faults.toString(16).padStart(8,'0');$('clock').textContent='t = '+(state.time_us/1e6).toFixed(2)+' s';$('runState').textContent=state.faults?'故障锁存':state.running?'运行中':'已停止';$('json').textContent=JSON.stringify(observation(),null,2);$('commandJson').textContent=JSON.stringify(lastCommand,null,2);render();
   }

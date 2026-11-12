@@ -1,0 +1,84 @@
+/* Dependency-free 3D servo view. It is a visualizer only: all angles come
+ * from the runtime observation passed to erServoView.update(). */
+(() => {
+  'use strict';
+  const RAD = Math.PI / 180;
+  let canvas, ctx, yaw = -28 * RAD, pitch = 23 * RAD, zoom = 1;
+  let dragging = false, px = 0, py = 0;
+  let model = { position: [0, 0], target: [0, 0], faults: 0 };
+
+  function resize() {
+    if (!canvas) return;
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(r.width * dpr));
+    canvas.height = Math.max(1, Math.round(r.height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+  function rotate(p) {
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const x = p[0] * cy - p[2] * sy;
+    const z = p[0] * sy + p[2] * cy;
+    return [x, p[1] * cp - z * sp, p[1] * sp + z * cp];
+  }
+  function project(p) {
+    const q = rotate(p), r = canvas.getBoundingClientRect();
+    const scale = Math.min(r.width, r.height) * 0.105 * zoom;
+    return { x: r.width / 2 + q[0] * scale, y: r.height * 0.56 - q[1] * scale, z: q[2] };
+  }
+  function poly(points, fill, stroke = 'rgba(20,30,45,.45)') {
+    const q = points.map(project); ctx.beginPath(); ctx.moveTo(q[0].x, q[0].y);
+    q.slice(1).forEach(v => ctx.lineTo(v.x, v.y)); ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke();
+  }
+  function box(cx, cy, cz, sx, sy, sz, color) {
+    const x0 = cx - sx / 2, x1 = cx + sx / 2, y0 = cy - sy / 2, y1 = cy + sy / 2;
+    const v = [[x0,y0,cz-sz/2],[x1,y0,cz-sz/2],[x1,y1,cz-sz/2],[x0,y1,cz-sz/2],
+      [x0,y0,cz+sz/2],[x1,y0,cz+sz/2],[x1,y1,cz+sz/2],[x0,y1,cz+sz/2]];
+    [[0,1,2,3],[4,7,6,5],[0,4,5,1],[3,2,6,7],[1,5,6,2],[0,3,7,4]]
+      .map(f => ({ f, z: f.reduce((a,i) => a + rotate(v[i])[2], 0) / 4 }))
+      .sort((a,b) => a.z - b.z).forEach((f,i) => poly(f.f.map(k => v[k]), color[i % color.length]));
+  }
+  function cylinder(cx, cy, cz, radius, depth, color) {
+    const n = 18, side = [], back = [], front = [];
+    for (let i = 0; i < n; i++) { const a = i * 2 * Math.PI / n;
+      side.push([[cx + radius*Math.cos(a), cy + radius*Math.sin(a), cz-depth/2], [cx + radius*Math.cos(a), cy + radius*Math.sin(a), cz+depth/2]]);
+      back.push([cx + radius*Math.cos(a), cy + radius*Math.sin(a), cz-depth/2]); front.push([cx + radius*Math.cos(a), cy + radius*Math.sin(a), cz+depth/2]); }
+    for (let i = 0; i < n; i++) poly([side[i][0],side[(i+1)%n][0],side[(i+1)%n][1],side[i][1]], color);
+    poly(back, 'rgba(45,55,70,.95)'); poly(front, 'rgba(190,205,220,.95)');
+  }
+  function arm(x, angle, color, ghost) {
+    const len = 2.25, w = .22, c = Math.cos(angle), s = Math.sin(angle);
+    const pts = [[x-w/2,0,0],[x+w/2,0,0],[x+w/2+len*c,w*s,0],[x-w/2+len*c,w*s,0]];
+    poly(pts, ghost ? 'rgba(110,170,255,.16)' : color, ghost ? 'rgba(80,140,230,.8)' : 'rgba(20,35,55,.7)');
+    const end = [x+len*c, len*s, 0];
+    poly([[end[0]-.18,end[1]-.1,-.12],[end[0]+.18,end[1]-.1,-.12],[end[0]+.18,end[1]+.1,-.12],[end[0]-.18,end[1]+.1,-.12]], ghost ? 'rgba(110,170,255,.12)' : color);
+  }
+  function draw() {
+    if (!canvas) return; const r = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, r.width, r.height);
+    const grad = ctx.createLinearGradient(0,0,0,r.height); grad.addColorStop(0,'#101c2e'); grad.addColorStop(1,'#07101c'); ctx.fillStyle=grad; ctx.fillRect(0,0,r.width,r.height);
+    // floor grid
+    for (let x=-8;x<=8;x++) poly([[x,-1.05,-5],[x,-1.05,5],[x+.015,-1.05,5],[x+.015,-1.05,-5]], 'rgba(120,160,200,.06)','rgba(120,160,200,.08)');
+    for (let z=-5;z<=5;z++) poly([[-8,-1.04,z],[8,-1.04,z],[8,-1.03,z+.015],[-8,-1.03,z+.015]], 'rgba(120,160,200,.05)','rgba(120,160,200,.07)');
+    const colors = model.faults ? ['#bd3d4d','#9e2938','#77222f'] : ['#36b5b0','#237d94','#18526f'];
+    [-2.5,2.5].forEach((x,i) => { const actual = model.position[i] || 0, target = model.target[i] || 0;
+      box(x, -.2, 0, 2.1, 1.25, 1.15, colors); cylinder(x, .48, 0, .43, .45, '#d6e2ed');
+      arm(x, target, '#7eafff', true); arm(x, actual, model.faults ? '#f05b65' : '#f2a04a', false);
+      const p = project([x, -1.35, 0]); ctx.fillStyle='#dbe8f5'; ctx.font='600 13px system-ui'; ctx.textAlign='center'; ctx.fillText(`舵机 ${i+1}`, p.x, p.y+24);
+      ctx.font='12px ui-monospace'; ctx.fillStyle='#93abc5'; ctx.fillText(`实际 ${(actual / RAD).toFixed(1)}°  · 目标 ${(target / RAD).toFixed(1)}°`, p.x, p.y+42);
+    });
+    ctx.textAlign='left'; ctx.font='12px system-ui'; ctx.fillStyle='#9fb4c9'; ctx.fillText('拖动旋转视角 · 滚轮缩放 · 实线=实际  虚线=目标', 16, r.height-16);
+  }
+  function init() {
+    canvas = document.getElementById('servoView'); if (!canvas) return;
+    ctx = canvas.getContext('2d'); canvas.addEventListener('pointerdown', e => { dragging=true; px=e.clientX; py=e.clientY; canvas.setPointerCapture(e.pointerId); });
+    canvas.addEventListener('pointermove', e => { if (!dragging) return; yaw += (e.clientX-px)*.012; pitch = Math.max(-.9, Math.min(.9, pitch+(e.clientY-py)*.012)); px=e.clientX; py=e.clientY; draw(); });
+    canvas.addEventListener('pointerup', () => { dragging=false; }); canvas.addEventListener('pointercancel', () => { dragging=false; });
+    canvas.addEventListener('wheel', e => { e.preventDefault(); zoom=Math.max(.55,Math.min(1.8,zoom*Math.exp(-e.deltaY*.001))); draw(); }, {passive:false});
+    window.addEventListener('resize', resize); resize();
+  }
+  window.erServoView = { update(v) { model = {...model, ...v}; if (!canvas) init(); draw(); }, resetView() { yaw=-28*RAD; pitch=23*RAD; zoom=1; draw(); } };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
