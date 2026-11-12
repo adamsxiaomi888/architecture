@@ -44,3 +44,14 @@ RTOS 端口需要实现相同两个操作：扩展为 64 位的单调时钟，�
 ```
 
 这证明业务任务与 Linux 启动入口已分开；FreeRTOS 端口源码现在位于 `ports/freertos/`，通过 `ER_BUILD_FREERTOS_PORT=ON` 可选编译；它需要产品提供 `FreeRTOSConfig.h`、kernel 和 MCU port。当前尚未在目标板编译或运行，因此仍不能声称 RTOS 已验证。下一步是为选定 MCU 固定配置、任务入口、tick 回绕策略，并复用同一 `er_control_task_run`。
+
+## FreeRTOS Linux 模拟
+
+仓库提供 `ports/freertos/sim/` 和 `tools/build_freertos_sim.sh`。它使用 FreeRTOS Kernel 的 GCC/Posix port 创建真实 FreeRTOS task，再调用同一份 `examples/control_task.c`；kernel 放在仓库外，不进入产品源码提交：
+
+```sh
+git clone --depth 1 --branch V11.1.0 https://github.com/FreeRTOS/FreeRTOS-Kernel.git /tmp/FreeRTOS-Kernel
+tools/build_freertos_sim.sh /tmp/FreeRTOS-Kernel
+```
+
+本轮实际结果：任务启动、40 个 10 ms 周期、控制场景通过，输出 `freertos_sim control_task rc=0`。该结果证明接口连接和任务逻辑可运行；Posix port 使用 pthread 模拟调度，不能证明 MCU tick、中断延迟、PWM/ADC 或硬实时性能。

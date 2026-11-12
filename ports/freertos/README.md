@@ -15,3 +15,5 @@ cmake --build build-freertos --target er_osal_freertos
 ```
 
 这个端口的微秒时间是由 tick 换算的，存在量化和 tick 回绕问题；量产产品必须使用 64 位扩展硬件计数器或验证回绕策略，不能把该示例直接当作高精度电机时钟。`vTaskDelay()` 只能在任务上下文调用。端口尚未在目标 MCU 上验证。
+
+Linux 模拟命令见 `ports/freertos/sim/README.md`。模拟器使用真实 FreeRTOS kernel 的 Posix port；它不等于 Cortex-M 目标移植，也不验证中断或外设时序。
