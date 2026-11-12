@@ -72,6 +72,37 @@
     const end = [x+len*c, base+len*s, 0];
     cylinderY(end[0],end[1],z,.13,.18,ghost?'rgba(70,145,230,.42)':color);
   }
+  /* The renderer uses orthographic projection, so a single affine mapping
+   * exactly places the label's local pixel rectangle onto the front plane.
+   * Hide the label when its outward normal faces away from the camera. */
+  function frontLabel(cx, id) {
+    if (rotate([0, 0, 1])[2] <= 0.025) return;
+    const topLeft = project([cx - .82, .20, .865]);
+    const topRight = project([cx + .82, .20, .865]);
+    const bottomLeft = project([cx - .82, -.60, .865]);
+    const width = 328, height = 160;
+    ctx.save();
+    ctx.transform((topRight.x-topLeft.x)/width,
+      (topRight.y-topLeft.y)/width,
+      (bottomLeft.x-topLeft.x)/height,
+      (bottomLeft.y-topLeft.y)/height, topLeft.x, topLeft.y);
+    ctx.beginPath(); ctx.rect(0, 0, width, height); ctx.clip();
+    ctx.fillStyle = '#171a1e'; ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = '#43494f'; ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, width-2, height-2);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = 'bold 40px system-ui'; ctx.fillStyle = '#f2f4f6';
+    ctx.fillText('HD', 16, 48);
+    ctx.font = 'bold 28px system-ui'; ctx.fillStyle = '#e64c3d';
+    ctx.fillText('Servo', 90, 48);
+    ctx.font = 'bold 31px ui-monospace, monospace'; ctx.fillStyle = '#e5d548';
+    ctx.fillText('HD1910M', 16, 88);
+    ctx.fillStyle = '#d6dce2'; ctx.fillRect(16, 100, 296, 7);
+    ctx.strokeStyle = '#a53932'; ctx.strokeRect(16, 119, 112, 29);
+    ctx.font = '22px ui-monospace, monospace'; ctx.fillStyle = '#d6dce2';
+    ctx.fillText('ID '+String(id).padStart(2, '0'), 24, 141);
+    ctx.restore();
+  }
   function drawCad(cx, color) {
     /* CAD STL is retained as an engineering reference; vendor STEP often
      * contains hidden internals. The product view uses the calibrated shell
@@ -119,6 +150,7 @@
         box(x - 1.08, -.18, 0, .16, .58, 1.38, ['#202328','#121419','#090a0c']);
         box(x + 1.08, -.18, 0, .16, .58, 1.38, ['#202328','#121419','#090a0c']);
       }
+      frontLabel(x, i + 1);
       /* HD-1910M top output: black bearing, thick horn, central screw and
        * six recessed holes. Render the target as a translucent second horn so
        * the target never degenerates into a floating line. */
@@ -128,7 +160,7 @@
       for (let h=0; h<6; h++) { const a=h*Math.PI/3; cylinderY(x+.25*Math.cos(a), .87, .25*Math.sin(a), .035, .025, '#050608'); }
       arm(x, target, 'rgba(100,165,255,.35)', true);
       arm(x, actual, model.faults ? '#f05b65' : '#c7ccd2', false);
-      const brand = project([x - .48, -.88, .25]); ctx.fillStyle='#e8edf2'; ctx.font='700 9px system-ui'; ctx.textAlign='center'; ctx.fillText('HD Servo', brand.x, brand.y); ctx.fillStyle='#f0d735'; ctx.font='700 8px ui-monospace'; ctx.fillText('HD1910M', brand.x, brand.y+11);
+
       const p = project([x, -1.35, 0]); ctx.fillStyle='#dbe8f5'; ctx.font='600 13px system-ui'; ctx.textAlign='center'; ctx.fillText(`舵机 ${i+1}`, p.x, p.y+24);
       ctx.font='12px ui-monospace'; ctx.fillStyle='#93abc5'; ctx.fillText(`实际 ${(actual / RAD).toFixed(1)}°  · 目标 ${(target / RAD).toFixed(1)}°`, p.x, p.y+42);
     });
