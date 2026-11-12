@@ -6,6 +6,7 @@
   let canvas, ctx, yaw = -28 * RAD, pitch = 23 * RAD, zoom = 1;
   let dragging = false, px = 0, py = 0;
   let model = { position: [0, 0], target: [0, 0], faults: 0 };
+  let cadMesh = null, cadLoading = false;
 
   function resize() {
     if (!canvas) return;
@@ -55,6 +56,26 @@
     const end = [x+len*c, len*s, 0];
     poly([[end[0]-.18,end[1]-.1,-.12],[end[0]+.18,end[1]-.1,-.12],[end[0]+.18,end[1]+.1,-.12],[end[0]-.18,end[1]+.1,-.12]], ghost ? 'rgba(110,170,255,.12)' : color);
   }
+  function drawCad(cx, color) {
+    if (!cadMesh) return false;
+    const tris = cadMesh.map(t => ({ t: t.map(v => [cx + v[0], v[1] - .2, v[2]]), z: t.reduce((a,v) => a + rotate(v)[2], 0) / 3 }));
+    tris.sort((a,b) => a.z - b.z).forEach(q => poly(q.t, color, 'rgba(12,32,48,.35)'));
+    return true;
+  }
+  function loadCad() {
+    if (cadLoading || cadMesh) return;
+    cadLoading = true;
+    fetch('assets/hd1910.step.stl').then(r => { if (!r.ok) throw Error('STL HTTP '+r.status); return r.text(); }).then(text => {
+      const raw = [], re = /vertex\s+([-+\deE.]+)\s+([-+\deE.]+)\s+([-+\deE.]+)/g; let m;
+      while ((m = re.exec(text))) raw.push([+m[1], +m[2], +m[3]]);
+      if (raw.length < 3) throw Error('STL has no vertices');
+      let min=[Infinity,Infinity,Infinity], max=[-Infinity,-Infinity,-Infinity]; raw.forEach(v => v.forEach((n,i)=>{min[i]=Math.min(min[i],n);max[i]=Math.max(max[i],n);}));
+      const size=max.map((n,i)=>n-min[i]), scale=Math.min(2.1/size[0],1.25/size[1],1.15/size[2]);
+      const verts=raw.map(v=>[(v[0]-(min[0]+max[0])/2)*scale,(v[1]-(min[1]+max[1])/2)*scale,(v[2]-(min[2]+max[2])/2)*scale]);
+      const stride=Math.max(1,Math.ceil(verts.length/18000)); cadMesh=[]; for(let i=0;i+2<verts.length;i+=3*stride) cadMesh.push([verts[i],verts[i+1],verts[i+2]]);
+      const s=document.getElementById('servoCadStatus'); if(s)s.textContent='官方 STEP 网格已加载'; draw();
+    }).catch(e => { const s=document.getElementById('servoCadStatus'); if(s)s.textContent='CAD 加载失败，使用尺寸模型'; }).finally(()=>{cadLoading=false;});
+  }
   function draw() {
     if (!canvas) return; const r = canvas.getBoundingClientRect();
     ctx.clearRect(0, 0, r.width, r.height);
@@ -64,7 +85,7 @@
     for (let z=-5;z<=5;z++) poly([[-8,-1.04,z],[8,-1.04,z],[8,-1.03,z+.015],[-8,-1.03,z+.015]], 'rgba(120,160,200,.05)','rgba(120,160,200,.07)');
     const colors = model.faults ? ['#bd3d4d','#9e2938','#77222f'] : ['#36b5b0','#237d94','#18526f'];
     [-2.5,2.5].forEach((x,i) => { const actual = model.position[i] || 0, target = model.target[i] || 0;
-      box(x, -.2, 0, 2.1, 1.25, 1.15, colors); cylinder(x, .48, 0, .43, .45, '#d6e2ed');
+      if (!drawCad(x, colors[0])) box(x, -.2, 0, 2.1, 1.25, 1.15, colors); cylinder(x, .48, 0, .43, .45, '#d6e2ed');
       arm(x, target, '#7eafff', true); arm(x, actual, model.faults ? '#f05b65' : '#f2a04a', false);
       const p = project([x, -1.35, 0]); ctx.fillStyle='#dbe8f5'; ctx.font='600 13px system-ui'; ctx.textAlign='center'; ctx.fillText(`舵机 ${i+1}`, p.x, p.y+24);
       ctx.font='12px ui-monospace'; ctx.fillStyle='#93abc5'; ctx.fillText(`实际 ${(actual / RAD).toFixed(1)}°  · 目标 ${(target / RAD).toFixed(1)}°`, p.x, p.y+42);
@@ -73,7 +94,7 @@
   }
   function init() {
     canvas = document.getElementById('servoView'); if (!canvas) return;
-    ctx = canvas.getContext('2d'); canvas.addEventListener('pointerdown', e => { dragging=true; px=e.clientX; py=e.clientY; canvas.setPointerCapture(e.pointerId); });
+    ctx = canvas.getContext('2d'); loadCad(); canvas.addEventListener('pointerdown', e => { dragging=true; px=e.clientX; py=e.clientY; canvas.setPointerCapture(e.pointerId); });
     canvas.addEventListener('pointermove', e => { if (!dragging) return; yaw += (e.clientX-px)*.012; pitch = Math.max(-.9, Math.min(.9, pitch+(e.clientY-py)*.012)); px=e.clientX; py=e.clientY; draw(); });
     canvas.addEventListener('pointerup', () => { dragging=false; }); canvas.addEventListener('pointercancel', () => { dragging=false; });
     canvas.addEventListener('wheel', e => { e.preventDefault(); zoom=Math.max(.55,Math.min(1.8,zoom*Math.exp(-e.deltaY*.001))); draw(); }, {passive:false});
