@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1050" viewBox="0 0 1600 1050"><defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10z" fill="#0070f3"/></marker></defs><rect width="1600" height="1050" fill="#fff"/><style>text{font-family:'Noto Sans CJK SC',sans-serif;fill:#171717}.t{font-size:36px;font-weight:700}.h{font-size:24px;font-weight:700}.b{font-size:19px}.s{font-size:16px;fill:#666}.mono{font-family:monospace;font-size:16px;fill:#555}.box{fill:#fff;stroke:#aaa;stroke-width:1.5}.group{fill:#fafafa;stroke:#ddd;stroke-width:1.5}.future{stroke-dasharray:8 6}.arrow{stroke:#0070f3;stroke-width:2;fill:none;marker-end:url(#a)}</style>
+<text x="55" y="60" class="t">通用嵌入式平台 · 跨业务 / 跨 OS / 跨硬件架构</text><text x="55" y="92" class="s">平台目标图｜实线：已有代码或契约；虚线：待实现适配与板级验证｜2026-11-12</text>
+<rect x="45" y="125" width="1510" height="170" rx="12" class="group"/><text x="70" y="160" class="h">产品应用层｜只组合能力，不直接操作芯片或总线</text>
+<rect x="75" y="185" width="270" height="80" rx="8" class="box"/><text x="95" y="218" class="h">智能家居</text><text x="95" y="247" class="b">窗帘 / 门锁 / 家电</text>
+<rect x="370" y="185" width="270" height="80" rx="8" class="box"/><text x="390" y="218" class="h">机器人</text><text x="390" y="247" class="b">关节 / 底盘 / 机器狗</text>
+<rect x="665" y="185" width="270" height="80" rx="8" class="box"/><text x="685" y="218" class="h">美容设备</text><text x="685" y="247" class="b">电机 / 加热 / 检测</text>
+<rect x="960" y="185" width="270" height="80" rx="8" class="box"/><text x="980" y="218" class="h">工业设备</text><text x="980" y="247" class="b">执行器 / 传感器 / 产测</text>
+<text x="1260" y="218" class="mono">同一平台，不复制框架</text><text x="1260" y="247" class="s">按配置组合能力</text>
+<path d="M800 295v35" class="arrow"/>
+<rect x="45" y="330" width="1510" height="170" rx="12" class="group"/><text x="70" y="365" class="h">通用能力与系统服务｜业务复用的核心</text>
+<rect x="75" y="390" width="300" height="80" rx="8" class="box"/><text x="95" y="423" class="h">能力组件</text><text x="95" y="452" class="b">运动 / 温控 / 传感 / 电源</text>
+<rect x="405" y="390" width="300" height="80" rx="8" class="box"/><text x="425" y="423" class="h">设备服务</text><text x="425" y="452" class="b">参数 / 日志 / 诊断 / 产测</text>
+<rect x="735" y="390" width="300" height="80" rx="8" class="box"/><text x="755" y="423" class="h">OTA 服务</text><text x="755" y="452" class="b">下载 / 校验 / A-B / 回滚</text>
+<rect x="1065" y="390" width="300" height="80" rx="8" class="box"/><text x="1085" y="423" class="h">实时安全核心</text><text x="1085" y="452" class="b">限制 / 看门狗 / 故障锁存</text>
+<path d="M800 500v35" class="arrow"/>
+<rect x="45" y="535" width="735" height="285" rx="12" class="group"/><text x="70" y="570" class="h">操作系统解耦边界 · OSAL</text><text x="70" y="600" class="s">替换调度、线程、队列、同步和单调时钟；上层业务保持复用</text>
+<rect x="75" y="635" width="190" height="80" rx="8" class="box future"/><text x="98" y="668" class="h">Linux</text><text x="98" y="697" class="b">POSIX / PREEMPT_RT</text>
+<rect x="290" y="635" width="190" height="80" rx="8" class="box future"/><text x="313" y="668" class="h">FreeRTOS</text><text x="313" y="697" class="b">高优先级任务</text>
+<rect x="505" y="635" width="190" height="80" rx="8" class="box future"/><text x="528" y="668" class="h">RT-Thread / Zephyr</text><text x="528" y="697" class="b">端口待实现</text>
+<text x="70" y="770" class="mono">当前：C 核心可在 Linux/WASM 编译；RTOS 目录为说明</text>
+<rect x="820" y="535" width="735" height="285" rx="12" class="group"/><text x="845" y="570" class="h">硬件能力解耦边界 · HAL / 设备接口</text><text x="845" y="600" class="s">替换芯片、总线和设备驱动；上层只看能力和错误契约</text>
+<rect x="850" y="635" width="190" height="80" rx="8" class="box"/><text x="873" y="668" class="h">执行器接口</text><text x="873" y="697" class="b">舵机 / 电机 / 加热</text>
+<rect x="1065" y="635" width="190" height="80" rx="8" class="box"/><text x="1088" y="668" class="h">传感器接口</text><text x="1088" y="697" class="b">位置 / 温度 / 电流</text>
+<rect x="1280" y="635" width="240" height="80" rx="8" class="box"/><text x="1303" y="668" class="h">存储 / 看门狗</text><text x="1303" y="697" class="b">参数 / OTA / 安全</text>
+<path d="M800 820v35" class="arrow"/>
+<rect x="45" y="855" width="1510" height="135" rx="12" class="group future"/><text x="70" y="890" class="h">可替换硬件实现（待接入与验证）</text><text x="70" y="930" class="b">BSP / MCU SDK → CAN · UART · PWM · ADC · Flash → HD-1910 总线舵机、智能电机、直接 PWM/FOC、温控器、继电器</text><text x="70" y="963" class="s">更换硬件主要改 BSP/驱动；更换 RTOS 主要改 OSAL；业务和能力组件通过契约复用。</text>
+</svg>
