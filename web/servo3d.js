@@ -51,9 +51,10 @@
   }
   function arm(x, angle, color, ghost) {
     const len = 2.25, w = .22, c = Math.cos(angle), s = Math.sin(angle);
-    const pts = [[x-w/2,0,0],[x+w/2,0,0],[x+w/2+len*c,w*s,0],[x-w/2+len*c,w*s,0]];
+    const base = .88;
+    const pts = [[x-w/2,base,0],[x+w/2,base,0],[x+w/2+len*c,base+w*s,0],[x-w/2+len*c,base+w*s,0]];
     poly(pts, ghost ? 'rgba(110,170,255,.16)' : color, ghost ? 'rgba(80,140,230,.8)' : 'rgba(20,35,55,.7)');
-    const end = [x+len*c, len*s, 0];
+    const end = [x+len*c, base+len*s, 0];
     poly([[end[0]-.18,end[1]-.1,-.12],[end[0]+.18,end[1]-.1,-.12],[end[0]+.18,end[1]+.1,-.12],[end[0]-.18,end[1]+.1,-.12]], ghost ? 'rgba(110,170,255,.12)' : color);
   }
   function drawCad(cx, color) {
@@ -92,16 +93,20 @@
       if (!drawCad(x, colors[0])) {
         /* HD-1910-C001 envelope: 34 x 20 x 23 mm, calibrated to the
          * visible shell. Chamfer-like layered faces keep the housing solid. */
-        box(x, -.18, 0, 2.30, 1.36, 1.55, colors);
-        box(x, -.18, -.80, 2.05, 1.18, .08, ['#287d8b','#1d5c72','#16455c']);
-        box(x, -.18, .80, 2.05, 1.18, .08, ['#287d8b','#1d5c72','#16455c']);
+        /* recessed centre plus narrower end caps suggest the PA66 shell's
+         * rounded/chamfered profile instead of a single rectangular block. */
+        box(x, -.18, 0, 2.12, 1.30, 1.42, colors);
+        box(x, -.18, -.70, 1.92, 1.12, .14, ['#287d8b','#1d5c72','#16455c']);
+        box(x, -.18, .70, 1.92, 1.12, .14, ['#287d8b','#1d5c72','#16455c']);
+        box(x, .45, 0, 1.86, .10, 1.20, ['#49c1bd','#247e91','#18566e']);
+        box(x, -.82, 0, 1.86, .10, 1.20, ['#226b7e','#15455a','#103347']);
         /* mounting ears on the long sides */
         box(x - 1.28, -.18, 0, .28, .78, 1.55, ['#237d94','#18526f','#123b51']);
         box(x + 1.28, -.18, 0, .28, .78, 1.55, ['#237d94','#18526f','#123b51']);
       }
       /* output bearing, shaft and the round 25T horn */
-      cylinder(x, .57, 0, .40, .34, '#d6e2ed');
-      cylinder(x, .77, 0, .67, .10, ['#e9eef3','#aebdca','#8094a4']);
+      cylinder(x, .58, 0, .34, .28, '#d6e2ed');
+      cylinder(x, .80, 0, .48, .10, ['#e9eef3','#aebdca','#8094a4']);
       arm(x, target, '#7eafff', true); arm(x, actual, model.faults ? '#f05b65' : '#f2a04a', false);
       const p = project([x, -1.35, 0]); ctx.fillStyle='#dbe8f5'; ctx.font='600 13px system-ui'; ctx.textAlign='center'; ctx.fillText(`舵机 ${i+1}`, p.x, p.y+24);
       ctx.font='12px ui-monospace'; ctx.fillStyle='#93abc5'; ctx.fillText(`实际 ${(actual / RAD).toFixed(1)}°  · 目标 ${(target / RAD).toFixed(1)}°`, p.x, p.y+42);
