@@ -4,6 +4,7 @@
 
 ## 从这里开始
 
+- [技术交流简图：六个框讲清平台](docs/architecture-simple.md)
 - [代码导读：从让舵机转一下开始](docs/guide.md)
 - [实现状态与限制](docs/status.md)
 - [量产架构基线与发布门禁](docs/production-baseline.md)
