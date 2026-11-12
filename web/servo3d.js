@@ -49,8 +49,18 @@
     for (let i = 0; i < n; i++) poly([side[i][0],side[(i+1)%n][0],side[(i+1)%n][1],side[i][1]], color);
     poly(back, 'rgba(45,55,70,.95)'); poly(front, 'rgba(190,205,220,.95)');
   }
+  /* Cylinder whose axis is the servo's vertical Y axis. The HD-1910 horn is
+   * a thick disk sitting on the top output shaft, so it must not use the
+   * generic Z-axis cylinder above. */
+  function cylinderY(cx, cy, cz, radius, depth, color, alpha=1) {
+    const n=24, side=[], low=[], high=[];
+    for(let i=0;i<n;i++){const a=i*2*Math.PI/n, x=cx+radius*Math.cos(a), z=cz+radius*Math.sin(a);low.push([x,cy-depth/2,z]);high.push([x,cy+depth/2,z]);side.push([low[i],high[i]]);}
+    for(let i=0;i<n;i++) poly([side[i][0],side[(i+1)%n][0],side[(i+1)%n][1],side[i][1]], color);
+    const face=typeof color==='string'?color:`rgba(20,24,28,${alpha})`;
+    poly(low,face); poly(high,face);
+  }
   function arm(x, angle, color, ghost) {
-    const len = 1.05, w = .28, c = Math.cos(angle), s = Math.sin(angle);
+    const len = .82, w = .34, c = Math.cos(angle), s = Math.sin(angle);
     const base = .88;
     const pts = [[x-w/2,base,0],[x+w/2,base,0],[x+w/2+len*c,base+w*s,0],[x-w/2+len*c,base+w*s,0]];
     poly(pts, ghost ? 'rgba(110,170,255,.16)' : color, ghost ? 'rgba(80,140,230,.8)' : 'rgba(20,35,55,.7)');
@@ -104,13 +114,15 @@
         box(x - 1.08, -.18, 0, .16, .58, 1.38, ['#202328','#121419','#090a0c']);
         box(x + 1.08, -.18, 0, .16, .58, 1.38, ['#202328','#121419','#090a0c']);
       }
-      /* output bearing, shaft and the round 25T horn */
-      cylinder(x, .58, 0, .29, .24, '#111317');
-      cylinder(x, .80, 0, .33, .10, ['#1d2025','#0b0d10','#050608']);
-      cylinder(x, .87, 0, .10, .12, ['#444a52','#24282e','#111317']);
-      /* 25T horn: compact metal disc with six visible fastener recesses. */
-      for (let h=0; h<6; h++) { const a=h*Math.PI/3; cylinder(x+.23*Math.cos(a), .87+.23*Math.sin(a), .08, .028, .025, '#737b84'); }
-      arm(x, target, '#7eafff', true); arm(x, actual, model.faults ? '#f05b65' : '#d2a15c', false);
+      /* HD-1910M top output: black bearing, thick horn, central screw and
+       * six recessed holes. Render the target as a translucent second horn so
+       * the target never degenerates into a floating line. */
+      cylinderY(x, .58, 0, .22, .18, '#090b0e');
+      cylinderY(x, .72, 0, .38, .20, '#15181d');
+      cylinderY(x, .84, 0, .12, .12, '#454b53');
+      for (let h=0; h<6; h++) { const a=h*Math.PI/3; cylinderY(x+.25*Math.cos(a), .87, .25*Math.sin(a), .035, .025, '#050608'); }
+      arm(x, target, 'rgba(100,165,255,.35)', true);
+      arm(x, actual, model.faults ? '#f05b65' : '#c7ccd2', false);
       const brand = project([x - .48, -.88, .25]); ctx.fillStyle='#e8edf2'; ctx.font='700 9px system-ui'; ctx.textAlign='center'; ctx.fillText('HD Servo', brand.x, brand.y); ctx.fillStyle='#f0d735'; ctx.font='700 8px ui-monospace'; ctx.fillText('HD1910M', brand.x, brand.y+11);
       const p = project([x, -1.35, 0]); ctx.fillStyle='#dbe8f5'; ctx.font='600 13px system-ui'; ctx.textAlign='center'; ctx.fillText(`舵机 ${i+1}`, p.x, p.y+24);
       ctx.font='12px ui-monospace'; ctx.fillStyle='#93abc5'; ctx.fillText(`实际 ${(actual / RAD).toFixed(1)}°  · 目标 ${(target / RAD).toFixed(1)}°`, p.x, p.y+42);
