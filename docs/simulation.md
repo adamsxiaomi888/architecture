@@ -1,60 +1,56 @@
-# 仿真、网页和 AI 闭环
+# 仿真、网页和命令闭环
 
-仿真层的目标是让大多数功能测试不依赖真实电机和 MCU，同时让同一份 C11 实时核心在桌面、浏览器和目标板上复用。仿真可以证明协议、状态机、边界检查和故障恢复；它不能替代 PWM/ADC 时序、EMC、机械惯量、真实 STO 和掉电测试。
+更新日期：2026-11-12。本页描述当前实现；Linux + MCU 是后续部署目标，目前还没有两端通信进程、真实 RTOS 或硬件驱动。
 
-## 闭环模型
+## 两个运行入口，同一份 C 源码
 
 ```text
-AI/应用 observation
-        ↓ command（序号、时间戳、有效期）
-实时运行时核心
-        ↓ output（目标、速度、fault）
-虚拟执行器模型
-        ↓ 带时间戳的传感器
-AI/应用下一次 observation
+桌面：er_sim_runner ──────────────┐
+                                 ├─ runtime.c → 控制输出 → sim.c → 传感器反馈
+浏览器：app.js → WASM bridge ─────┘
 ```
 
-虚拟时钟由测试驱动递增，不读取墙上时钟。相同初始状态、随机种子和命令序列必须产生相同结果，方便回归和问题重放。AI 只能通过 command 接口控制设备，不能修改运行时内部状态；所有命令仍要经过位置、速度、序列、超时和故障检查。
+这里表示代码复用，并非浏览器与桌面共享一个进程。浏览器 C 核心在浏览器本地执行；Ubuntu 的 HTTP 服务只提供静态文件。
 
-## 当前桌面仿真
+`runtime.c` 检查命令与传感器后计算受限速度；`sim.c` 按速度积分得到下一步位置。虚拟时间由调用者递增，不读取墙上时钟。模型没有惯量、真实电流、温度或碰撞，不应称为经过硬件标定的数字孪生。
 
-`sim/` 提供确定性虚拟舵机和运行器。它模拟位置反馈、速度响应和传感器有效性，适合运行几十万步而不等待真实时间。构建后可运行：
+## 桌面场景与回放
 
 ```sh
-cmake -S . -B /tmp/er-sim
-cmake --build /tmp/er-sim
-/tmp/er-sim/er_sim
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/er_sim_runner normal
+./build/er_sim_runner sensor > /tmp/servo-sensor.jsonl
+python3 tools/replay.py ./build/er_sim_runner /tmp/servo-sensor.jsonl
 ```
 
-桌面仿真输出的是可读文本，后续可增加 JSONL 记录。记录至少包含 `time_us`、输入命令、传感器快照、核心输出、fault 位和仿真事件。
+每个场景推进 300 步，每步 10 ms，输出 JSONL。normal 检查位置收敛；stale 检查命令超时；sensor 注入一次传感器失效并检查故障锁存；stall 只检查虚拟轴不动，**尚无堵转保护**。
 
-## 网页可视化
+`tools/replay.py` 在相同构建下重跑固定场景并逐条比较记录，拒绝不支持的场景和不匹配数据。它不是任意 AI 命令回放器，也没有随机噪声模型。详情见 [场景测试](scenarios.md)。
 
-`web/index.html` 是无外部依赖的可视化入口。它用 Canvas 展示目标位置、实际位置和 fault，并提供开始、重置和故障注入操作。网页中的模型用于观察和教学；产品控制逻辑仍以 C 核心为准。
+## 浏览器 C/WASM 闭环
 
-浏览器实时性不等同于 MCU 实时性。页面可以暂停、快进和重置仿真时间，因此适合演示、参数探索和 AI 闭环实验，不用于证明 1 kHz 周期抖动或功率级安全。
+`web/app.js` 自动加载 `er_core.js` / `er_core.wasm`，通过 `web/wasm/bridge.c` 导出的 reset、command、step、fault、stop、state 接口运行同一份 C 核心和仿真模型。页面步长为 20 ms，与桌面 10 ms 不同，因此不能要求两者逐条轨迹相同。
 
-## AI 回放与测试
+构建产物已提供；加载失败时页面明确显示 JavaScript 演示模式。两种后端的日志禁止混用。重新构建方法见 [WASM 说明](../web/wasm/README.md)。
 
-建议将一次实验保存为 JSONL：
+网页支持目标调整、正常/传感器断线/命令超时场景，以及 JSONL 事件导出和导入回放。`window.erConsole` 提供可供自动化调用的命令/观测接口，尚未接入真实 AI 模型或训练系统。网页自动播放会续发命令，脚本单独调用 step 不续发命令，便于复现超时。协议见 [浏览器接口](../web/protocol.md)。
 
-```json
-{"type":"seed","value":7}
-{"type":"command","time_us":0,"sequence":1,"position":[1,0],"velocity_limit":[1,1]}
-{"type":"sensor","time_us":1000,"position":[0,0],"valid":true}
-{"type":"output","time_us":1000,"enabled":true,"faults":0}
+## 3D 画面是什么
+
+`web/servo3d.js` 用 Canvas 投影程序化几何体，展示黑色 HD1910M 示意机身、输出盘、实际/目标摇臂和贴面标签。它读取与曲线相同的 `position / target / faults`，不另行计算控制算法。
+
+官方 STEP 与转换后的 STL 已存入 `models/` 和 `web/assets/`。当前主视图为了可读性使用程序化外壳，并非完整 CAD 装配；加载状态不代表机械尺寸、孔位或运动轴已完成工程校验。原始 CAD 是参考，制造仍需型号图纸和实物确认。视觉接近不等于真实动力学一致。
+
+## 自动测试及边界
+
+```sh
+(cd build && ctest --output-on-failure)
+node tests/test_web_wasm.cjs
 ```
 
-CI 重新执行相同日志时，应比较每一步的输出和最终状态。对于随机噪声，固定种子；对于故障，使用明确事件（丢包、断线、过温、存储损坏、OTA 中断），禁止依赖人工操作或真实等待。
+有 Node 时 CTest 注册 8 项：runtime、ota、四个桌面场景、web_bridge、web_wasm；无 Node 时注册 7 项。WASM 测试执行实际编译产物和网页适配层，使用模拟 DOM 检查运动、故障和事件回放，不是截图测试。
 
-## WebAssembly 路线
+OTA 测试当前只覆盖原型正常路径，不代表已验证真实升级安全。浏览器与桌面通过也不能证明 PWM/ADC 同步、中断抖动、真实 Flash 掉电恢复、功率保护或机械安全。
 
-核心代码保持 C11、无平台 I/O 和无动态资源依赖后，可以用 Emscripten 编译为 WebAssembly，并由网页调用导出的 `init/submit/step` 函数。WASM 版本与桌面版本必须共享同一组场景和期望输出；WASM 只是交互载体，不能宣称具备硬实时保证。
-
-## 验收边界
-
-- 仿真通过：协议、控制状态机、故障逻辑和 OTA 流程符合软件规格。
-- 硬件通过：控制周期、PWM/ADC、通信电气特性、真实功率保护、掉电和机械安全符合硬件规格。
-- 两类结果分别记录，不能用浏览器动画或桌面仿真替代板级验收。
-
-最后更新时间：2026-11-12。
+后续工作包括真实硬件/RTOS 端口、参数与日志服务、产测、完整 OTA 故障注入；实现前保持“计划”状态。

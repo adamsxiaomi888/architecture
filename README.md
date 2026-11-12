@@ -1,35 +1,66 @@
-# embodied-runtime
+# 通用嵌入式运行时原型 · embodied-runtime
 
-`embodied-runtime` 是一个面向具身智能执行器的最小可量产运行时：同一份无动态内存的 C11 核心可编译到 Linux/POSIX，也可被 FreeRTOS、RT-Thread 等任务直接调用。当前示例是双关节位置/速度受限控制器，故意把“策略”和“实时安全执行”分开。
+本项目面向可复用的嵌入式能力组件，目标覆盖 Linux 与 MCU/RTOS，而非仅服务于具身智能。**当前是可运行的软件仿真原型，不是量产框架。** 双轴舵机模型、C11 控制核心、浏览器 WebAssembly 与场景回放已经运行；真实硬件和 RTOS 集成尚未完成。
 
-## 快速运行（Linux）
+## 从这里开始
+
+- [代码导读：从让舵机转一下开始](docs/guide.md)
+- [实现状态与限制](docs/status.md)
+- [当前架构图](docs/architecture.svg) · [PNG 预览](docs/architecture.png)
+
+![当前架构](docs/architecture.png)
+- [仿真与网页的数据流](docs/simulation.md)
+- [需求与阶段验收](docs/requirements.md)
+- [接口契约](docs/interfaces.md) · [场景测试](docs/scenarios.md)
+- [OTA 设计目标](docs/ota.md) · [量产验证清单](docs/production.md)
+
+## 当前实现边界
+
+| 能力 | 实际状态 |
+|---|---|
+| C11 控制核心 | 固定双轴、位置比例控制、命令校验、超时与传感器故障锁存；不是 FOC |
+| 桌面仿真 | `er_sim_runner` 运行 normal / stale / sensor / stall 四个确定性场景，输出 JSONL |
+| 浏览器 | 同一份 C 核心和仿真模型经 WASM 运行；失败时明确标识 JavaScript 演示后备模式 |
+| 3D 展示 | Canvas 投影的程序化 HD1910M 示意外形，读取仿真反馈；不是物理仿真或制造级 CAD |
+| STEP / STL | 官方型号 STEP 与转换 STL 已归档，作为机械参考；当前主视图并非直接使用该网格 |
+| 测试 | 配置含 8 项测试（有 Node 时）；没有 Node 时仅注册 7 项原生测试 |
+| HAL / RTOS | HAL 接口草案已定义；`ports/` 目前是接入说明，没有可运行 RTOS/BSP 端口 |
+| OTA | 独立内存状态机原型；没有 Flash 写入、真实签名验证、掉电持久化或启动回滚 |
+| 参数、日志、产测 | 需求与方案阶段，尚未形成设备服务实现 |
+
+## Linux 构建与测试
+
+在仓库根目录执行；用子目录运行 CTest，兼容 Ubuntu 20.04 自带的旧版 CTest：
 
 ```sh
-cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
-ctest --test-dir build --output-on-failure
-./build/er_demo
+(cd build && ctest --output-on-failure)
+./build/er_sim_runner normal
+./build/er_sim_runner sensor > /tmp/servo-sensor.jsonl
+python3 tools/replay.py ./build/er_sim_runner /tmp/servo-sensor.jsonl
 ```
 
-核心调用顺序是：
+`er_demo` 仍保留为单次核心调用示例。原生场景回放会重跑固定场景再逐条比较，不是任意命令流的硬件回放。
 
-```c
-er_runtime_init(&rt, &limits);             /* 上电初始化 */
-er_runtime_submit_command(&rt, &cmd);       /* 非实时策略线程提交 */
-er_runtime_arm(&rt);                         /* 经过上电检查后使能 */
-er_runtime_step(&rt, now_us, &sensor, &out); /* 固定频率实时循环 */
+## Windows 浏览器访问 VMware 中的页面
+
+```sh
+./web/start-server.sh
 ```
 
-`step` 失败、命令超时、时间回拨、传感器无效、越界或 NaN 都会锁存 fault，并清零输出。必须先 `disarm` 再 `reset_faults`，最后重新检查并 `arm`，避免故障自动恢复造成危险动作。
+在 Windows 浏览器打开脚本打印的 Ubuntu 地址。页面显示 **C11 核心 · WebAssembly** 时，正在运行 C 后端。调整目标、注入故障或导入日志后，3D 摇臂和曲线读取同一份状态。
 
-## 目录
+源码和 WASM 构建入口见 [web/wasm](web/wasm/README.md)，浏览器事件与日志格式见 [web/protocol.md](web/protocol.md)。网页测试使用实际 WASM 和模拟 DOM，不能替代浏览器画面检查或 MCU 实时时序验证。
 
-- `include/er/runtime.h`：稳定的跨平台 ABI 和数据结构。
-- `src/runtime.c`：无锁、无 malloc 的确定性核心。
-- `ports/posix`：Linux 时钟/线程/设备接入骨架。
-- `ports/freertos`：FreeRTOS 任务、队列和 tick 适配说明。
-- `tests`：边界和故障锁存测试。
-- `docs/design.md`：架构和实时性设计。
-- `docs/production.md`：量产、验证、升级和故障闭环。
+## 代码组织
 
-目前核心只负责“安全命令执行器”；神经网络推理、规划、CAN/串口协议属于上层适配器，应通过拷贝到单写入命令邮箱接入，不能在 ISR 中运行推理或修改运行时状态。
+- `src/runtime.c`：单所有者控制核心，无内部线程同步；命令提交与 step 必须由同一执行上下文串行调用。
+- `sim/`：虚拟时间、双轴执行器与场景运行器。
+- `web/wasm/bridge.c`：浏览器与 C 核心/仿真之间的桥接。
+- `web/app.js`、`web/servo3d.js`：交互、曲线和外观展示。
+- `include/er/hal.h`：设备、时钟、存储与看门狗接口草案。
+- `src/ota.c`：未接入控制闭环的 OTA 原型。
+- `tests/`：原生核心与网页 WASM 回归测试。
+
+更新日期：2026-11-12。功能变更应同步更新实现状态、导读与测试条件；设计目标不能标为已实现。

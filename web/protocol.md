@@ -1,6 +1,6 @@
 # 浏览器命令与回放协议（v1）
 
-当前 JavaScript 演示后端的协议不等同于 C ABI。页面明确标注后端；后续接入 WASM 时日志必须保留后端身份，不允许静默跨后端重播。
+网页默认加载已构建的 C/WASM 后端，失败时明确标注 JavaScript 演示后端。入口协议不等同于 C ABI；日志保留后端身份，不允许跨后端重播。
 
 控制台 `window.erConsole` 提供 `reset()`、`command(c)`、`event(e)`、`step()`、`observation()`、`exportLog()`、`replay(text)`。AI 自动化调用同一接口，不修改内部状态。每个 step 固定推进 20000 us；浏览器定时器仅决定播放速度，不充当硬实时钟。
 

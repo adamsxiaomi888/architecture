@@ -1,6 +1,8 @@
 # 硬件与操作系统接口边界
 
-`include/er/hal.h` 是平台边界的最小定义。实时核心只依赖接口和数据契约，不包含 MCU SDK、RTOS 头文件、总线寄存器或具体引脚。FreeRTOS、RT-Thread、Zephyr、Linux 和裸机分别实现同一组接口。
+> 更新：2026-11-12。本文描述接口契约草案；没有完成具体 OS/BSP 实现，当前 runtime 和 sim 尚未通过此 HAL 调用设备。
+
+`include/er/hal.h` 是平台边界的最小定义。实时核心只依赖接口和数据契约，不包含 MCU SDK、RTOS 头文件、总线寄存器或具体引脚。计划由 FreeRTOS、RT-Thread、Zephyr、Linux 和裸机端口实现对应接口。
 
 ## 时钟与实时约束
 
