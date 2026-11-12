@@ -7,6 +7,7 @@
 - [代码导读：从让舵机转一下开始](docs/guide.md)
 - [实现状态与限制](docs/status.md)
 - [当前架构图](docs/architecture.svg) · [PNG 预览](docs/architecture.png)
+- [仿真实现运行图](docs/architecture-implementation.svg) · [平台目标图副本](docs/architecture-platform.svg)
 
 ![当前架构](docs/architecture.png)
 - [仿真与网页的数据流](docs/simulation.md)
