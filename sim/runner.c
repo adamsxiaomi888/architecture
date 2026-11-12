@@ -1,0 +1,3 @@
+#include "sim.h"
+#include <stdio.h>
+int main(void){er_sim_t sim;er_runtime_t rt;er_limits_t lim={{-3,-3},{3,3},{2,2}};er_command_t cmd={0,1,{1.0f,-0.5f},{1,1}};er_sensor_t sensor;er_output_t out;er_sim_init(&sim);er_runtime_init(&rt,&lim);if(er_runtime_submit_command(&rt,&cmd)!=ER_OK||er_runtime_arm(&rt)!=ER_OK)return 1;for(int n=0;n<100;n++){er_sim_sensor(&sim,&sensor);if(er_runtime_step(&rt,sim.now_us,&sensor,&out)!=ER_OK)break;er_sim_advance(&sim,&out,10000);if(n%10==0)printf("t=%6llu ms pos=(%+.3f,%+.3f) enabled=%d faults=0x%x\n",(unsigned long long)(sim.now_us/1000),sim.position[0],sim.position[1],out.enabled,out.faults);}return 0;}
