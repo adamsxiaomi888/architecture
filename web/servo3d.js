@@ -88,29 +88,30 @@
     // floor grid
     for (let x=-8;x<=8;x++) poly([[x,-1.05,-5],[x,-1.05,5],[x+.015,-1.05,5],[x+.015,-1.05,-5]], 'rgba(120,160,200,.06)','rgba(120,160,200,.08)');
     for (let z=-5;z<=5;z++) poly([[-8,-1.04,z],[8,-1.04,z],[8,-1.03,z+.015],[-8,-1.03,z+.015]], 'rgba(120,160,200,.05)','rgba(120,160,200,.07)');
-    const colors = model.faults ? ['#bd3d4d','#9e2938','#77222f'] : ['#36b5b0','#237d94','#18526f'];
+    const colors = model.faults ? ['#8f222a','#671b22','#431118'] : ['#25282d','#17191d','#0d0f12'];
     [-2.5,2.5].forEach((x,i) => { const actual = model.position[i] || 0, target = model.target[i] || 0;
       if (!drawCad(x, colors[0])) {
         /* HD-1910-C001 envelope: 34 x 20 x 23 mm, calibrated to the
          * visible shell. Chamfer-like layered faces keep the housing solid. */
         /* recessed centre plus narrower end caps suggest the PA66 shell's
          * rounded/chamfered profile instead of a single rectangular block. */
-        box(x, -.18, 0, 2.12, 1.30, 1.42, colors);
-        box(x, -.18, -.70, 1.92, 1.12, .14, ['#287d8b','#1d5c72','#16455c']);
-        box(x, -.18, .70, 1.92, 1.12, .14, ['#287d8b','#1d5c72','#16455c']);
-        box(x, .45, 0, 1.86, .10, 1.20, ['#49c1bd','#247e91','#18566e']);
-        box(x, -.82, 0, 1.86, .10, 1.20, ['#226b7e','#15455a','#103347']);
-        /* mounting ears on the long sides */
-        box(x - 1.28, -.18, 0, .28, .78, 1.55, ['#237d94','#18526f','#123b51']);
-        box(x + 1.28, -.18, 0, .28, .78, 1.55, ['#237d94','#18526f','#123b51']);
+        box(x, -.18, 0, 2.08, 1.22, 1.62, colors);
+        box(x, -.18, -.80, 1.94, 1.04, .12, ['#1b1d21','#111317','#090a0c']);
+        box(x, -.18, .80, 1.94, 1.04, .12, ['#1b1d21','#111317','#090a0c']);
+        box(x, .45, 0, 1.86, .08, 1.36, ['#34383e','#202329','#121419']);
+        box(x, -.82, 0, 1.86, .08, 1.36, ['#15171b','#0d0f12','#08090b']);
+        /* compact mounting tabs integrated into the black case */
+        box(x - 1.08, -.18, 0, .16, .58, 1.38, ['#202328','#121419','#090a0c']);
+        box(x + 1.08, -.18, 0, .16, .58, 1.38, ['#202328','#121419','#090a0c']);
       }
       /* output bearing, shaft and the round 25T horn */
-      cylinder(x, .58, 0, .34, .28, '#d6e2ed');
-      cylinder(x, .80, 0, .31, .10, ['#c7d2dc','#899aa8','#657785']);
-      cylinder(x, .87, 0, .13, .12, ['#e7edf2','#aebdca','#8094a4']);
+      cylinder(x, .58, 0, .29, .24, '#111317');
+      cylinder(x, .80, 0, .33, .10, ['#1d2025','#0b0d10','#050608']);
+      cylinder(x, .87, 0, .10, .12, ['#444a52','#24282e','#111317']);
       /* 25T horn: compact metal disc with six visible fastener recesses. */
-      for (let h=0; h<6; h++) { const a=h*Math.PI/3; cylinder(x+.22*Math.cos(a), .87+.22*Math.sin(a), .08, .035, .025, '#52616d'); }
+      for (let h=0; h<6; h++) { const a=h*Math.PI/3; cylinder(x+.23*Math.cos(a), .87+.23*Math.sin(a), .08, .028, .025, '#737b84'); }
       arm(x, target, '#7eafff', true); arm(x, actual, model.faults ? '#f05b65' : '#d2a15c', false);
+      const brand = project([x - .48, -.88, .25]); ctx.fillStyle='#e8edf2'; ctx.font='700 9px system-ui'; ctx.textAlign='center'; ctx.fillText('HD Servo', brand.x, brand.y); ctx.fillStyle='#f0d735'; ctx.font='700 8px ui-monospace'; ctx.fillText('HD1910M', brand.x, brand.y+11);
       const p = project([x, -1.35, 0]); ctx.fillStyle='#dbe8f5'; ctx.font='600 13px system-ui'; ctx.textAlign='center'; ctx.fillText(`舵机 ${i+1}`, p.x, p.y+24);
       ctx.font='12px ui-monospace'; ctx.fillStyle='#93abc5'; ctx.fillText(`实际 ${(actual / RAD).toFixed(1)}°  · 目标 ${(target / RAD).toFixed(1)}°`, p.x, p.y+42);
     });
