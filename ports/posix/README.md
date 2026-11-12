@@ -1,3 +1,7 @@
-# POSIX 端口
+# Linux POSIX 时间端口
 
-在 Linux 中由一个固定周期线程读取单调时钟（`clock_gettime(CLOCK_MONOTONIC, ...)`），复制传感器快照，调用 `er_runtime_step`，再把 `er_output_t` 写入驱动。建议使用 `SCHED_FIFO`、CPU affinity、`mlockall`，并把 AI/规划线程通过单写者命令邮箱隔离。
+`osal_posix.c` 已实现 `CLOCK_MONOTONIC` 和绝对截止时间等待 `clock_nanosleep(TIMER_ABSTIME)`；信号中断 EINTR 后继续等待原截止点。
+
+构建与契约见 [OSAL 说明](../../docs/osal.md)。该端口不创建线程，不修改进程调度策略，不提供硬实时保证。
+
+实际产品仍需按平台验证调度优先级、内存锁定、CPU 亲和性和控制周期预算；尚未实现任务/队列/锁或 MCU 端口。

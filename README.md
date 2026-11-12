@@ -4,6 +4,8 @@
 
 ## 从这里开始
 
+- [最小 OSAL：Linux 与 RTOS 如何复用周期逻辑](docs/osal.md)
+
 - [技术交流简图：六个框讲清平台](docs/architecture-simple.md)
 - [代码导读：从让舵机转一下开始](docs/guide.md)
 - [实现状态与限制](docs/status.md)
@@ -26,7 +28,7 @@
 | 浏览器 | 同一份 C 核心和仿真模型经 WASM 运行；失败时明确标识 JavaScript 演示后备模式 |
 | 3D 展示 | Canvas 投影的程序化 HD1910M 示意外形，读取仿真反馈；不是物理仿真或制造级 CAD |
 | STEP / STL | 官方型号 STEP 与转换 STL 已归档，作为机械参考；当前主视图并非直接使用该网格 |
-| 测试 | 配置含 10 项测试（有 Node 时）；没有 Node 时注册 9 项原生测试 |
+| 测试 | Linux 配置含 12 项测试（有 Node 时）；没有 Node 时注册 11 项原生测试 |
 | HAL / RTOS | 执行器 HAL 绑定与两类仿真驱动已接入原生/WASM；其他 HAL 为草案，`ports/` 尚无可运行 RTOS/BSP 端口 |
 | OTA | 独立内存状态机原型；没有 Flash 写入、真实签名验证、掉电持久化或启动回滚 |
 | 参数、日志、产测 | 需求与方案阶段，尚未形成设备服务实现 |
@@ -73,3 +75,5 @@ python3 tools/replay.py ./build/er_sim_runner /tmp/servo-sensor.jsonl
 ## 带 RTOS 的业务如何在 Linux 测试
 
 通过统一接口编写的业务可连接 Linux 或 RTOS 适配实现；直接调用 FreeRTOS API、ISR 或芯片寄存器的代码不能原样运行在普通 Linux。当前实际运行的是无 OS 依赖的 C 核心与仿真驱动，完整 OSAL/RTOS 端口尚未实现。RTOS 模拟端口也不能证明板端实时性。
+
+最小 OSAL 已实现单调时钟、绝对截止等待与周期调度，提供 Linux POSIX 端口；任务/队列/锁及 RTOS 端口尚未实现。见 [OSAL 说明](docs/osal.md)。
