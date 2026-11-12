@@ -6,6 +6,7 @@
 
 - [代码导读：从让舵机转一下开始](docs/guide.md)
 - [实现状态与限制](docs/status.md)
+- [量产架构基线与发布门禁](docs/production-baseline.md)
 - [当前架构图](docs/architecture.svg) · [PNG 预览](docs/architecture.png)
 - [仿真实现运行图](docs/architecture-implementation.svg) · [平台目标图副本](docs/architecture-platform.svg)
 
