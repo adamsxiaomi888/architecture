@@ -36,3 +36,5 @@ Linux 上有 Node 时注册 12 项测试，否则 11 项（跳过 `web_wasm`）�
 最小 OSAL 已实现单调时钟、绝对截止等待与周期调度，提供 Linux POSIX 端口；无 POSIX/RTOS 依赖的共用控制任务已通过 Linux 入口运行。任务/队列/锁及目标 MCU RTOS 端口尚未实现；FreeRTOS OSAL 源码与可选 CMake 目标已提供但未在目标板验证。见 [OSAL 说明](osal.md)。
 
 FreeRTOS Kernel GCC/Posix 模拟已通过 `tools/build_freertos_sim.sh` 运行同一 `control_task.c`（40 个 10 ms 周期，normal 场景通过）。这不是目标 MCU RTOS 验收；FreeRTOS 端口仍需产品配置、芯片 port 和板级测量。
+
+Renode 第三层 MCU 仿真入口已建立于 `renode/`，当前是待选定 MCU 的 Cortex-M 平台骨架；没有 Renode、目标 ELF 和冻结的寄存器地址前，不宣称固件已在 MCU 仿真中运行。

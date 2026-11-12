@@ -1,0 +1,7 @@
+mach create
+machine LoadPlatformDescription @platform.repl
+showAnalyzer uart
+sysbus LoadELF $elf
+start
+sleep 2
+q
