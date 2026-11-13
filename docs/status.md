@@ -11,7 +11,7 @@
 | 3D | Canvas 投影的程序化外壳、舵盘、实体摇臂、表面标签 | CAD 精确分件动画、碰撞/惯量/力矩物理 |
 | CAD | 官方 STEP 与转换的 STL 已保存 | 制造公差、轴位置和实物比对验收 |
 | HAL | 执行器绑定组件及有/无反馈仿真驱动；原生和 WASM 已通过接口访问设备 | 真实驱动、其他 HAL 实现 |
-| RTOS | POSIX/FreeRTOS 接入说明 | 可编译 RTOS 端口和板级验证 |
+| RTOS | POSIX/FreeRTOS 接入说明；Zephyr 作为量产主 RTOS 的选型已冻结 | Zephyr OSAL、nucleo_h563zi 板级构建、驱动和板级验证 |
 | OTA | RAM 状态机原型与正常路径测试 | 状态缺陷修复、真实验签、Flash、启动恢复 |
 | 参数/日志/产测 | 需求和设计说明 | 持久化服务、事件服务、产测执行与报告 |
 
@@ -35,6 +35,6 @@ Linux 上有 Node 时注册 12 项测试，否则 11 项（跳过 `web_wasm`）�
 
 最小 OSAL 已实现单调时钟、绝对截止等待与周期调度，提供 Linux POSIX 端口；无 POSIX/RTOS 依赖的共用控制任务已通过 Linux 入口运行。任务/队列/锁及目标 MCU RTOS 端口尚未实现；FreeRTOS OSAL 源码与可选 CMake 目标已提供但未在目标板验证。见 [OSAL 说明](osal.md)。
 
-FreeRTOS Kernel GCC/Posix 模拟已通过 `tools/build_freertos_sim.sh` 运行同一 `control_task.c`（40 个 10 ms 周期，normal 场景通过）。这不是目标 MCU RTOS 验收；FreeRTOS 端口仍需产品配置、芯片 port 和板级测量。
+FreeRTOS Kernel GCC/Posix 模拟已通过 `tools/build_freertos_sim.sh` 运行同一 `control_task.c`（40 个 10 ms 周期，normal 场景通过）。这只是公共接口兼容性验证，不是目标 MCU RTOS 验收。量产路径改为 Zephyr，仍需完成产品配置、STM32H563 板级构建、驱动接线和实时性测量。
 
 Renode 第三层 MCU 仿真入口已建立于 `renode/`，当前是待选定 MCU 的 Cortex-M 平台骨架；没有 Renode、目标 ELF 和冻结的寄存器地址前，不宣称固件已在 MCU 仿真中运行。
